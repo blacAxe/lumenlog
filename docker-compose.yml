@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  # Redpanda: high-performance Kafka replacement
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.1
+    command:
+      - redpanda start --overprovisioned --smp 1 --reserve-memory 0M
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    ports:
+      - "19092:19092"
+
+  # ClickHouse: The "analytical" database for massive log storage
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_DB=lumen_db
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - CLICKHOUSE_PASSWORD=lumenlog2026
+
+  # Dev-Shell: VS Code workspace inside Linux
+  dev-shell:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - .:/workspace:cached
+    network_mode: service:redpanda 
+    tty: true
+    stdin_open: true

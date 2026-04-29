@@ -1,0 +1,18 @@
+[package]
+name = "lumen-agent"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "lumen-agent"
+path = "src/main.rs"
+
+[dependencies]
+# Using = means "Only this version, do not look for newer ones"
+tokio = { version = "=1.32.0", features = ["full"] }
+prost = "=0.12.0"
+rdkafka = { version = "=0.31.0", features = ["cmake-build"] }
+chrono = "=0.4.31"
+
+[build-dependencies]
+prost-build = "=0.12.0"

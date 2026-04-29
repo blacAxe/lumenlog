@@ -1,0 +1,22 @@
+{
+    "name": "LumenLog-Development",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "dev-shell",
+    "workspaceFolder": "/workspace",
+    "features": {
+        "ghcr.io/devcontainers/features/rust:1": {},
+        "ghcr.io/devcontainers/features/go:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "rust-lang.rust-analyzer",
+                "zxh404.vscode-proto3",
+                "tamasfe.even-better-toml"
+            ]
+        }
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y cmake build-essential libssl-dev pkg-config"
+}   

@@ -1,0 +1,17 @@
+# Rust
+/workspace/agent/target/
+**/*.rs.bk
+Cargo.lock
+
+# Go
+bin/
+vendor/
+
+# Protobuf Generated Files (Optional: Some keep them, some don't)
+/workspace/proto/gen/
+
+# Docker/System
+.DS_Store
+.env
+__pycache__/
+*.log
