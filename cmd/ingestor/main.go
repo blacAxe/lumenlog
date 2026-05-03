@@ -28,15 +28,20 @@ func main() {
         Password: "lumenlog2026", 
     	},
 	})
+
 	if err != nil {
 		log.Fatalf("ClickHouse connection failed: %v", err)
 	}
 
+	if err := conn.Ping(ctx); err != nil {
+		log.Fatalf("ClickHouse not reachable: %v", err)
+	}
+
 	// Setup Kafka Consumer
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"group.id":          "lumen-ingestor-group",
-		"auto.offset.reset": "earliest",
+		"bootstrap.servers": "redpanda:9092",
+    	"group.id": "lumen-ingestor",
+    	"auto.offset.reset": "earliest",
 	})
 	if err != nil {
 		log.Fatalf("Kafka consumer failed: %v", err)
@@ -49,13 +54,20 @@ func main() {
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
 	// --- BATCHING LOGIC ---
-	const batchSize = 100
+	const batchSize = 1
 	var count int
 
 	// Create a new batch
-	batch, err := conn.PrepareBatch(ctx, "INSERT INTO logs")
+	batch, err := conn.PrepareBatch(ctx, "INSERT INTO lumen_db.logs")
 	if err != nil {
-		log.Fatal(err)
+				for {
+			batch, err = conn.PrepareBatch(ctx, "INSERT INTO logs")
+			if err == nil {
+				break
+			}
+			fmt.Println("Waiting for ClickHouse table...")
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	for {
@@ -73,6 +85,9 @@ func main() {
 
 			switch e := ev.(type) {
 			case *kafka.Message:
+
+				fmt.Println("Consumed message from Kafka")
+
 				logData := &pb.LogEvent{}
 				if err := proto.Unmarshal(e.Value, logData); err != nil {
 					fmt.Printf("Failed to decode: %v\n", err)
@@ -86,7 +101,7 @@ func main() {
 					logData.Level,
 					logData.Message,
 					time.Unix(0, logData.Timestamp), // Convert nanoseconds to time
-					logData.Metadata,
+					fmt.Sprintf("%v", logData.Metadata), // Convert map to string for storage
 				)
 				if err != nil {
 					fmt.Printf("Batch append error: %v\n", err)
@@ -101,8 +116,18 @@ func main() {
 					}
 					fmt.Printf("Batched %d logs to ClickHouse\n", count)
 					
-					// Re-initialize the batch for next round
-					batch, _ = conn.PrepareBatch(ctx, "INSERT INTO logs")
+					// Reinitialize the batch for next round
+					batch, err = conn.PrepareBatch(ctx, "INSERT INTO lumen_db.logs")
+						if err != nil {
+											for {
+						batch, err = conn.PrepareBatch(ctx, "INSERT INTO lumen_db.logs")
+						if err == nil {
+							break
+						}
+						fmt.Println("Waiting for ClickHouse table...")
+						time.Sleep(2 * time.Second)
+					}
+					}
 					count = 0
 				}
 

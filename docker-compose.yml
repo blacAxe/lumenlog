@@ -1,26 +1,37 @@
-version: '3.8'
 services:
   # Redpanda: high-performance Kafka replacement
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.1
     command:
-      - redpanda start --overprovisioned --smp 1 --reserve-memory 0M
+      - redpanda start --overprovisioned --smp 1 --memory 512M --reserve-memory 0M
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --set redpanda.auto_create_topics_enabled=true
     ports:
       - "19092:19092"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
 
   # ClickHouse: The "analytical" database for massive log storage
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:23.8
+    container_name: clickhouse
     ports:
       - "8123:8123"
       - "9000:9000"
     environment:
       - CLICKHOUSE_DB=lumen_db
       - CLICKHOUSE_USER=default
-      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
       - CLICKHOUSE_PASSWORD=lumenlog2026
+    mem_limit: 1g
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Dev-Shell: VS Code workspace inside Linux
   dev-shell:
@@ -30,3 +41,33 @@ services:
     network_mode: service:redpanda 
     tty: true
     stdin_open: true
+
+  ingestor:
+    image: golang:1.26
+    container_name: lumen-ingestor
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      redpanda:
+        condition: service_started
+      clickhouse:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    command: sh -c "sleep 10 && cd cmd/ingestor && go run main.go"
+
+  topic-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.1.2
+    depends_on:
+      - redpanda
+    entrypoint: >
+      bash -c "
+      sleep 5 &&
+      rpk topic create logs-raw --brokers redpanda:9092 || true
+      "
+
+
+volumes:
+  clickhouse-data:
+  redpanda-data:

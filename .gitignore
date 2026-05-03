@@ -1,17 +1,19 @@
 # Rust
-/workspace/agent/target/
+agent/target/
 **/*.rs.bk
-Cargo.lock
+
+# Optional: usually DO keep Cargo.lock for apps
+# Cargo.lock
 
 # Go
 bin/
 vendor/
 
-# Protobuf Generated Files (Optional: Some keep them, some don't)
-/workspace/proto/gen/
+# Protobuf generated (you ARE committing gen so comment this out)
+# proto/gen/
 
-# Docker/System
+# OS / misc
 .DS_Store
 .env
-__pycache__/
 *.log
+__pycache__/

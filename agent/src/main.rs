@@ -12,9 +12,9 @@ use prost::Message;
 
 #[tokio::main]
 async fn main() {
-    // Connect to Redpanda (using the service name from docker-compose)
+    // Connect to Redpanda 
     let producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", "localhost:19092")
         .set("message.timeout.ms", "5000")
         .create()
         .expect("Producer creation error");

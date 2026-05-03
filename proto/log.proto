@@ -1,7 +1,6 @@
 syntax = "proto3";
-package lumenlog;
 
-option go_package = "github.com/omar/lumenlog/proto/gen";
+package lumenlog;
 
 message LogEvent {
   string service_name = 1;
@@ -9,5 +8,5 @@ message LogEvent {
   string level = 3;
   string message = 4;
   int64 timestamp = 5;
-  map<string, string> metadata = 6; 
+  map<string, string> metadata = 6;
 }
