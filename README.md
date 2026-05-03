@@ -1,5 +1,8 @@
 # LumenLog: Distributed Log Ingestor (Rust -> Redpanda -> Go -> ClickHouse)
 
+## Category
+Distributed Systems
+
 A high-performance observability pipeline demonstrating cross-language data serialization and high-throughput persistence.
 
 ## Architecture
