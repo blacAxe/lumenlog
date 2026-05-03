@@ -15,7 +15,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/omar/lumenlog/proto/gen" //
+	pb "lumenlog/proto/gen" //
 )
 
 var producer *kafka.Producer
@@ -116,12 +116,13 @@ func main() {
 
 				// Append to the current batch
 				err := batch.Append(
-					logData.ServiceName,
-					logData.Host,
-					logData.Level,
-					logData.Message,
-					time.Unix(0, logData.Timestamp),     // Convert nanoseconds to time
-					fmt.Sprintf("%v", logData.Metadata), // Convert map to string for storage
+					logData.GetServiceName(),
+					logData.GetHost(),
+					logData.GetLevel(),
+					logData.GetMessage(),
+					logData.GetUserId(), 
+					time.Unix(0, logData.GetTimestamp()),
+					fmt.Sprintf("%v", logData.GetMetadata()),
 				)
 				if err != nil {
 					fmt.Printf("Batch append error: %v\n", err)
@@ -165,30 +166,30 @@ func handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Map JSON to Protobuf LogEvent
-	logData := &pb.LogEvent{
-		ServiceName: "sentinel-proxy",
-		Host:        "sentinel-internal",
-		Level:       "SECURITY",
-		Message:     fmt.Sprintf("Action: %v | Path: %v | Attack: %v", event["action"], event["path"], event["attack_type"]),
-		Timestamp:   time.Now().UnixNano(),
-		Metadata:    make(map[string]string),
-	}
+	userId := fmt.Sprintf("%v", event["user_id"])
+    attackType := fmt.Sprintf("%v", event["attack_type"])
+    
+    logData := &pb.LogEvent{
+        ServiceName: "sentinel-proxy",
+        Level:       "INFO", // Default to INFO
+        Message:     fmt.Sprintf("User: %v | Action: %v | Attack: %v", userId, event["action"], attackType),
+        UserId:      userId,
+        Timestamp:   time.Now().UnixNano(),
+    }
 
-	// Put raw details in Metadata
-	logData.Metadata["ip"] = fmt.Sprintf("%v", event["ip"])
-	logData.Metadata["request_id"] = fmt.Sprintf("%v", event["request_id"])
+    // ONLY upgrade to SECURITY if an actual attack is present
+    // This stops Discord from pinging for every single click
+    if attackType != "" && attackType != "<nil>" && attackType != "none" {
+        logData.Level = "SECURITY"
+    }
 
-	// Serialize to binary Protobuf
-	payload, _ := proto.Marshal(logData)
+    // PUSH TO KAFKA (So ClickHouse gets the data)
+    payload, _ := proto.Marshal(logData)
+    topic := "logs-raw"
+    producer.Produce(&kafka.Message{
+        TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+        Value:          payload,
+    }, nil)
 
-	// Push to Redpanda 'logs-raw'
-	topic := "logs-raw"
-	producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          payload,
-	}, nil)
-
-	fmt.Printf("[PIPELINE] Pushed Sentinel event %s to Redpanda\n", event["request_id"])
-	w.WriteHeader(http.StatusOK)
+    w.WriteHeader(http.StatusOK)
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	pb "github.com/omar/lumenlog/proto/gen"
+	pb "lumenlog/proto/gen"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -40,7 +40,7 @@ func main() {
 			logData := &pb.LogEvent{}
 			if err := proto.Unmarshal(e.Value, logData); err == nil {
 				// ONLY alert if it's a SECURITY level log
-				if logData.Level == "SECURITY" {
+				if logData.GetLevel() == "SECURITY" {
 					sendToDiscord(logData)
 				}
 			}
@@ -51,7 +51,7 @@ func main() {
 func sendToDiscord(event *pb.LogEvent) {
 	msg := map[string]string{
 		"content": fmt.Sprintf("**SECURITY ALERT** \n**Service:** %s\n**Message:** %s\n**Time:** %s",
-			event.ServiceName, event.Message, time.Unix(0, event.Timestamp).Format(time.RFC1123)),
+			event.GetServiceName(), event.GetMessage(), time.Unix(0, event.GetTimestamp()).Format(time.RFC1123)),
 	}
 	body, _ := json.Marshal(msg)
 	http.Post(discordWebhookURL, "application/json", bytes.NewBuffer(body))

@@ -1,19 +1,30 @@
-# Rust
+# --- Infrastructure & Databases ---
+# Ignore local database storage and environment secrets
+clickhouse/data/
+redpanda/data/
+.env
+.env.*
+
+# --- Go (Ingestor & Alerter) ---
+bin/
+main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# --- Rust (Agent) ---
 agent/target/
 **/*.rs.bk
 
-# Optional: usually DO keep Cargo.lock for apps
-# Cargo.lock
+# --- Protobuf ---
+# We keep proto/gen/ because we want the generated code in the repo
+!proto/gen/
 
-# Go
-bin/
-vendor/
-
-# Protobuf generated (you ARE committing gen so comment this out)
-# proto/gen/
-
-# OS / misc
+# --- OS & IDE ---
 .DS_Store
-.env
+.idea/
+.vscode/
 *.log
-__pycache__/
