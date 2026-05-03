@@ -46,6 +46,8 @@ services:
     image: golang:1.26
     container_name: lumen-ingestor
     working_dir: /app
+    ports:
+      - "9001:9001"
     volumes:
       - .:/app
     depends_on:
@@ -56,6 +58,16 @@ services:
       topic-init:
         condition: service_completed_successfully
     command: sh -c "sleep 10 && cd cmd/ingestor && go run main.go"
+
+  alerter:
+    image: golang:1.26
+    container_name: lumen-alerter
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      - redpanda
+    command: sh -c "cd cmd/alerter && go run main.go"
 
   topic-init:
     image: docker.redpanda.com/redpandadata/redpanda:v23.1.2
