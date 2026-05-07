@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	pb "lumenlog/proto/gen"
+
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -38,11 +39,14 @@ func main() {
 		switch e := ev.(type) {
 		case *kafka.Message:
 			logData := &pb.LogEvent{}
-			if err := proto.Unmarshal(e.Value, logData); err == nil {
-				// ONLY alert if it's a SECURITY level log
-				if logData.GetLevel() == "SECURITY" {
-					sendToDiscord(logData)
-				}
+			err := proto.Unmarshal(e.Value, logData)
+			if err != nil {
+				continue
+			}
+
+			if logData.GetLevel() == "SECURITY" {
+
+				sendToDiscord(logData)
 			}
 		}
 	}
@@ -50,10 +54,14 @@ func main() {
 
 func sendToDiscord(event *pb.LogEvent) {
 	msg := map[string]string{
-		"content": fmt.Sprintf("**SECURITY ALERT** \n**Service:** %s\n**Message:** %s\n**Time:** %s",
-			event.GetServiceName(), event.GetMessage(), time.Unix(0, event.GetTimestamp()).Format(time.RFC1123)),
+		"content": fmt.Sprintf("🚨 **SECURITY ALERT**\n**User:** %s\n**Service:** %s\n**Attack:** %s\n**Action:** %s\n**Time:** %s",
+			event.GetUserId(),
+			event.GetServiceName(),
+			event.GetAttackType(), // Now available!
+			event.GetAction(),     // Now available!
+			time.Unix(0, event.GetTimestamp()).Format(time.RFC1123)),
 	}
+
 	body, _ := json.Marshal(msg)
 	http.Post(discordWebhookURL, "application/json", bytes.NewBuffer(body))
-	fmt.Println("Alert sent to Discord!")
 }

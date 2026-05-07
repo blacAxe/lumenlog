@@ -11,5 +11,7 @@ message LogEvent {
   string message = 4;
   int64 timestamp = 5;
   map<string, string> metadata = 6;
-  string user_id = 7; 
+  string user_id = 7;      // Generates GetUserId()
+  string attack_type = 8;  // NEW: Generates GetAttackType()
+  string action = 9;       // NEW: Generates GetAction()
 }

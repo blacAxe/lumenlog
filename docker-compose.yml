@@ -1,5 +1,4 @@
 services:
-  # Redpanda: high-performance Kafka replacement
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.1
     command:
@@ -11,8 +10,9 @@ services:
       - "19092:19092"
     volumes:
       - redpanda-data:/var/lib/redpanda/data
+    networks:
+      - sentinel-net
 
-  # ClickHouse: The "analytical" database for massive log storage
   clickhouse:
     image: clickhouse/clickhouse-server:23.8
     container_name: clickhouse
@@ -32,8 +32,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sentinel-net
 
-  # Dev-Shell: VS Code workspace inside Linux
   dev-shell:
     image: mcr.microsoft.com/devcontainers/base:ubuntu
     volumes:
@@ -58,6 +59,8 @@ services:
       topic-init:
         condition: service_completed_successfully
     command: sh -c "sleep 10 && cd cmd/ingestor && go run main.go"
+    networks:
+      - sentinel-net
 
   alerter:
     image: golang:1.26
@@ -68,18 +71,26 @@ services:
     depends_on:
       - redpanda
     command: sh -c "cd cmd/alerter && go run main.go"
+    networks:
+      - sentinel-net
 
   topic-init:
     image: docker.redpanda.com/redpandadata/redpanda:v23.1.2
     depends_on:
       - redpanda
+    networks:
+      - sentinel-net
     entrypoint: >
       bash -c "
       sleep 5 &&
       rpk topic create logs-raw --brokers redpanda:9092 || true
       "
 
-
 volumes:
   clickhouse-data:
   redpanda-data:
+
+networks:
+  sentinel-net:
+    external: true
+    name: sentinel-net

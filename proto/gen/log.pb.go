@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.35.0--rc1
-// source: proto/log.proto
+// source: log.proto
 
 package gen
 
@@ -29,14 +29,16 @@ type LogEvent struct {
 	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Metadata      map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	UserId        string                 `protobuf:"bytes,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`             // Generates GetUserId()
+	AttackType    string                 `protobuf:"bytes,8,opt,name=attack_type,json=attackType,proto3" json:"attack_type,omitempty"` // NEW: Generates GetAttackType()
+	Action        string                 `protobuf:"bytes,9,opt,name=action,proto3" json:"action,omitempty"`                           // NEW: Generates GetAction()
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LogEvent) Reset() {
 	*x = LogEvent{}
-	mi := &file_proto_log_proto_msgTypes[0]
+	mi := &file_log_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -48,7 +50,7 @@ func (x *LogEvent) String() string {
 func (*LogEvent) ProtoMessage() {}
 
 func (x *LogEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_log_proto_msgTypes[0]
+	mi := &file_log_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,7 +63,7 @@ func (x *LogEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogEvent.ProtoReflect.Descriptor instead.
 func (*LogEvent) Descriptor() ([]byte, []int) {
-	return file_proto_log_proto_rawDescGZIP(), []int{0}
+	return file_log_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *LogEvent) GetServiceName() string {
@@ -113,11 +115,25 @@ func (x *LogEvent) GetUserId() string {
 	return ""
 }
 
-var File_proto_log_proto protoreflect.FileDescriptor
+func (x *LogEvent) GetAttackType() string {
+	if x != nil {
+		return x.AttackType
+	}
+	return ""
+}
 
-const file_proto_log_proto_rawDesc = "" +
+func (x *LogEvent) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+var File_log_proto protoreflect.FileDescriptor
+
+const file_log_proto_rawDesc = "" +
 	"\n" +
-	"\x0fproto/log.proto\x12\blumenlog\"\xa3\x02\n" +
+	"\tlog.proto\x12\blumenlog\"\xdc\x02\n" +
 	"\bLogEvent\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x14\n" +
@@ -125,30 +141,33 @@ const file_proto_log_proto_rawDesc = "" +
 	"\amessage\x18\x04 \x01(\tR\amessage\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12<\n" +
 	"\bmetadata\x18\x06 \x03(\v2 .lumenlog.LogEvent.MetadataEntryR\bmetadata\x12\x17\n" +
-	"\auser_id\x18\a \x01(\tR\x06userId\x1a;\n" +
+	"\auser_id\x18\a \x01(\tR\x06userId\x12\x1f\n" +
+	"\vattack_type\x18\b \x01(\tR\n" +
+	"attackType\x12\x16\n" +
+	"\x06action\x18\t \x01(\tR\x06action\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
 	"Z\b/gen;genb\x06proto3"
 
 var (
-	file_proto_log_proto_rawDescOnce sync.Once
-	file_proto_log_proto_rawDescData []byte
+	file_log_proto_rawDescOnce sync.Once
+	file_log_proto_rawDescData []byte
 )
 
-func file_proto_log_proto_rawDescGZIP() []byte {
-	file_proto_log_proto_rawDescOnce.Do(func() {
-		file_proto_log_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_log_proto_rawDesc), len(file_proto_log_proto_rawDesc)))
+func file_log_proto_rawDescGZIP() []byte {
+	file_log_proto_rawDescOnce.Do(func() {
+		file_log_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_log_proto_rawDesc), len(file_log_proto_rawDesc)))
 	})
-	return file_proto_log_proto_rawDescData
+	return file_log_proto_rawDescData
 }
 
-var file_proto_log_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_proto_log_proto_goTypes = []any{
+var file_log_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_log_proto_goTypes = []any{
 	(*LogEvent)(nil), // 0: lumenlog.LogEvent
 	nil,              // 1: lumenlog.LogEvent.MetadataEntry
 }
-var file_proto_log_proto_depIdxs = []int32{
+var file_log_proto_depIdxs = []int32{
 	1, // 0: lumenlog.LogEvent.metadata:type_name -> lumenlog.LogEvent.MetadataEntry
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
@@ -157,26 +176,26 @@ var file_proto_log_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_proto_log_proto_init() }
-func file_proto_log_proto_init() {
-	if File_proto_log_proto != nil {
+func init() { file_log_proto_init() }
+func file_log_proto_init() {
+	if File_log_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_log_proto_rawDesc), len(file_proto_log_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_log_proto_rawDesc), len(file_log_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_log_proto_goTypes,
-		DependencyIndexes: file_proto_log_proto_depIdxs,
-		MessageInfos:      file_proto_log_proto_msgTypes,
+		GoTypes:           file_log_proto_goTypes,
+		DependencyIndexes: file_log_proto_depIdxs,
+		MessageInfos:      file_log_proto_msgTypes,
 	}.Build()
-	File_proto_log_proto = out.File
-	file_proto_log_proto_goTypes = nil
-	file_proto_log_proto_depIdxs = nil
+	File_log_proto = out.File
+	file_log_proto_goTypes = nil
+	file_log_proto_depIdxs = nil
 }
