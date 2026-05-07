@@ -1,55 +1,353 @@
-# **LumenLog: Distributed Polyglot Observability Pipeline**
+# LumenLog
 
-## **Category**
+## Category
+
 Distributed Systems / Security Engineering
 
-A high-performance observability pipeline demonstrating cross-language data serialization and high-throughput persistence. This system serves as the central nervous system for unified logging across Go and Rust environments.
+---
 
-## **Architecture**
+## Overview
 
-* **Producer (Rust):** Serializes system heartbeats using Protobuf and streams to Redpanda[cite: 10]
-* **Producer (Go):** Sentinel WAF bridges security events via JSON-to-Protobuf translation[cite: 10]
-* **Broker (Redpanda):** Kafka-compatible message broker for high-speed event streaming[cite: 10]
-* **Ingestor (Go):** Consumes binary data, decodes via Protobuf, and batches writes to ClickHouse[cite: 3, 10]
-* **Alerter (Go):** Real-time sidecar service that triggers Discord notifications for security events[cite: 10]
-* **Storage (ClickHouse):** Columnar database optimized for real-time analytical queries[cite: 10]
+LumenLog is a distributed observability and security event pipeline designed to collect, process, persist, and alert on system activity in real time.
 
-## **Data Flow**
+The project combines multiple services written in Go and Rust into a unified logging architecture capable of handling both infrastructure telemetry and security events.
 
-1. **Rust Agent** generates system logs -> Serialized with Protobuf -> Redpanda[cite: 10]
-2. **Sentinel Proxy** generates security events -> Bridged to Ingestor -> Redpanda[cite: 8, 10]
-3. **Go Ingestor** consumes messages -> Decodes and batches -> ClickHouse[cite: 3, 10]
-4. **Go Alerter** monitors stream -> Filters for "SECURITY" level -> Discord API[cite: 10]
+Originally focused on distributed logging, the platform evolved into a lightweight security operations pipeline through integration with Sentinel Platform.
 
-## **Core Features**
+LumenLog now supports:
 
-* **End-to-End Pipeline:** Fully integrated cross-language data flow[cite: 10]
-* **Unified Schema:** Shared Protobuf definitions for Rust and Go services[cite: 10]
-* **Smart Alerting:** Intelligent filtering that suppresses "Allowed" traffic noise while triggering Discord alerts only for verified security threats.[cite: 3]
-* **Identity Awareness:** Integrated with the Identity Provider (IdP) to capture and store `user_id` or `anonymous` tags in every log entry for full auditability.[cite: 3]
-* **High-Throughput Persistence:** Batched inserts into ClickHouse for analytical scale[cite: 3, 10]
-* **Containerized Infrastructure:** Entire stack managed via Docker Compose[cite: 10, 7]
+* real-time security alerting
+* identity-aware event tracking
+* Discord webhook notifications
+* centralized event persistence
+* cross-service observability
 
-## **Latest Update: The Security & Identity Bridge**
+The system demonstrates how telemetry, security enforcement, and event streaming can work together in a production-style architecture.
 
-This update integrates **Sentinel Proxy** and **Identity Verification** into the pipeline, transforming LumenLog into a Security Operations Platform.
+---
 
-* **Filtered Notifications:** Refactored the Alerter to ignore routine traffic, preventing Discord spam while maintaining 100% visibility on attacks.[cite: 3]
-* **JWT Integration:** Ingestor now processes user identity passed through the Sentinel Zero Trust middleware.[cite: 3, 8]
-* **Discord Webhook integration** for instant threat visibility[cite: 10]
-* Unified system health (Rust) and security data (Go) into a single ClickHouse schema[cite: 10]
+# Core Idea
 
-## **Database Schema (lumen_db.logs)**
+Every system generates events.
 
-* **service_name:** String (e.g., 'rust-agent', 'sentinel-proxy')[cite: 10]
-* **host:** String[cite: 10]
-* **level:** String (INFO, WARN, SECURITY)[cite: 10]
-* **message:** String[cite: 10]
-* **timestamp:** DateTime64[cite: 10]
-* **metadata:** Map(String, String)[cite: 10]
+LumenLog treats those events as a continuous stream that can be:
 
-## **Getting Started**
+* collected
+* enriched
+* filtered
+* persisted
+* analyzed
+* alerted on in real time
 
-### **1. Launch Stack**
+Rather than storing logs locally per service, LumenLog centralizes everything into a shared event pipeline.
+
+---
+
+# System Architecture
+
+```mermaid
+flowchart LR
+
+    User["User / Attacker"]
+
+    subgraph SentinelPlatform
+        Proxy["Sentinel Proxy"]
+        IdP["Zero Trust IdP"]
+    end
+
+    subgraph Pipeline
+        Broker["Redpanda"]
+        Ingestor["Go Ingestor"]
+        Alerter["Discord Alerter"]
+    end
+
+    subgraph Storage
+        ClickHouse["ClickHouse"]
+    end
+
+    subgraph Agents
+        RustAgent["Rust Agent"]
+    end
+
+    User --> Proxy
+    Proxy --> Broker
+    RustAgent --> Broker
+
+    Broker --> Ingestor
+    Broker --> Alerter
+
+    Ingestor --> ClickHouse
+    Alerter --> Discord
+```
+
+---
+
+# Architecture Components
+
+## Rust Agent
+
+A lightweight telemetry producer written in Rust.
+
+Responsibilities:
+
+* generate heartbeat events
+* serialize logs using Protobuf
+* publish messages to Redpanda
+* simulate distributed system telemetry
+
+---
+
+## Sentinel Security Bridge
+
+Sentinel Proxy acts as a security event producer.
+
+Responsibilities:
+
+* emit WAF detection events
+* emit rate-limit violations
+* attach authenticated identity metadata
+* forward structured security events into the pipeline
+
+This transforms LumenLog from a general logging system into a security-aware observability platform.
+
+---
+
+## Redpanda Broker
+
+Kafka-compatible event streaming platform used as the system backbone.
+
+Responsibilities:
+
+* receive events from producers
+* buffer and distribute streams
+* decouple producers from consumers
+* support high-throughput event ingestion
+
+---
+
+## Go Ingestor
+
+Consumes binary Protobuf messages from Redpanda.
+
+Responsibilities:
+
+* decode Protobuf events
+* normalize structured metadata
+* batch writes efficiently
+* persist events into ClickHouse
+
+---
+
+## Discord Alerter
+
+Real-time security notification sidecar.
+
+Responsibilities:
+
+* monitor security events
+* suppress noise from normal traffic
+* trigger Discord alerts only for malicious activity
+* provide immediate visibility into attacks
+
+---
+
+## ClickHouse Storage
+
+Column-oriented analytical database.
+
+Responsibilities:
+
+* persist structured logs
+* support fast event querying
+* enable future dashboards and analytics
+* store both telemetry and security data
+
+---
+
+# Security Event Flow
+
+## Example Attack Flow
+
+1. User sends malicious request to Sentinel Proxy
+2. WAF detects suspicious pattern
+3. Proxy emits structured SECURITY event
+4. Event streamed through Redpanda
+5. Discord Alerter triggers notification
+6. Ingestor stores event in ClickHouse
+
+---
+
+## Example Discord Alert
+
+```text
+🚨 SECURITY ALERT
+
+User: bob
+Service: sentinel-proxy
+Attack: SQL Injection
+Action: blocked
+Path: /login
+IP: 192.168.x.x
+```
+
+---
+
+# Core Features
+
+## Real-Time Security Alerting
+
+* Discord webhook integration
+* Immediate attack notifications
+* Reduced alert spam through intelligent filtering
+
+---
+
+## Identity-Aware Logging
+
+Security events include:
+
+* authenticated username
+* anonymous traffic tagging
+* service metadata
+* attack classification
+
+This creates a full audit trail across the system.
+
+---
+
+## Distributed Event Streaming
+
+* asynchronous architecture
+* decoupled services
+* producer/consumer pipeline
+* scalable event transport
+
+---
+
+## Polyglot System Design
+
+The pipeline intentionally combines:
+
+* Rust producers
+* Go services
+* Protobuf schemas
+* Kafka-compatible infrastructure
+
+This demonstrates interoperability across languages and services.
+
+---
+
+## Structured Security Telemetry
+
+Current event types include:
+
+* SQL injection attempts
+* XSS attempts
+* rate-limit violations
+* blocked admin access
+* authentication activity
+
+---
+
+## Containerized Infrastructure
+
+Entire stack runs through Docker Compose.
+
+Services can be launched together using a single command.
+
+---
+
+# Database Schema
+
+## lumen_db.logs
+
+| Column | Type |
+|---|---|
+| service_name | String |
+| host | String |
+| level | String |
+| message | String |
+| timestamp | DateTime64 |
+| metadata | Map(String, String) |
+
+---
+
+# Running the System
+
+## Prerequisites
+
+* Docker
+* Docker Compose
+
+---
+
+## Start the Stack
+
 ```bash
-docker compose up -d
+docker compose up --build
+```
+
+---
+
+## Stop the Stack
+
+```bash
+docker compose down
+```
+
+---
+
+## Fresh Reset
+
+```bash
+docker compose down -v
+```
+
+---
+
+# Current Integration Status
+
+LumenLog currently integrates with:
+
+* Sentinel Proxy
+* Zero Trust Identity Provider
+* Discord webhook notifications
+
+This version focuses on security event streaming and observability independently from Sentinel OS.
+
+Future versions are planned to integrate directly into the Sentinel OS dashboard for live visualization and analytics.
+
+---
+
+# Tech Stack
+
+* Go
+* Rust
+* Redpanda
+* ClickHouse
+* Docker
+* Protobuf
+* Discord Webhooks
+
+---
+
+# What This Project Demonstrates
+
+This project demonstrates:
+
+* distributed event streaming
+* real-time observability pipelines
+* security telemetry engineering
+* polyglot system architecture
+* structured logging design
+* asynchronous service communication
+* identity-aware security monitoring
+* production-style containerized infrastructure
+
+---
+
+# Closing Note
+
+LumenLog started as a distributed logging experiment and evolved into a security-focused observability pipeline.
+
+The project demonstrates how security systems, event streaming, and telemetry infrastructure can operate together as one connected architecture rather than isolated components.
