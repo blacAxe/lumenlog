@@ -61,6 +61,26 @@ services:
     command: sh -c "sleep 10 && cd cmd/ingestor && go run main.go"
     networks:
       - sentinel-net
+    
+  security-agent:
+    image: rust:1.88
+    container_name: lumen-security-agent
+    working_dir: /app
+    ports:
+      - "7777:7777"
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+      apt update &&
+      apt install -y cmake pkg-config build-essential protobuf-compiler &&
+      cd agent &&
+      cargo run
+      "
+    depends_on:
+      - redpanda
+    networks:
+      - sentinel-net
 
   alerter:
     image: golang:1.26
