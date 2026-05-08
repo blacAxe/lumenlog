@@ -56,7 +56,7 @@ func main() {
 		log.Fatalf("Kafka consumer failed: %v", err)
 	}
 
-	c.SubscribeTopics([]string{"logs-raw"}, nil)
+	c.SubscribeTopics([]string{"security-events"}, nil)
 
 	fmt.Println("Lumen Ingestor Live! Processing logs...")
 
@@ -110,7 +110,7 @@ func main() {
 					logData.GetLevel(),
 					logData.GetMessage(),
 					logData.GetUserId(),
-					time.Unix(0, logData.GetTimestamp()),
+					time.Unix(logData.GetTimestamp(), 0),
 					fmt.Sprintf("%v", logData.GetMetadata()),
 				)
 				if err != nil {
@@ -135,4 +135,3 @@ func main() {
 		}
 	}
 }
-

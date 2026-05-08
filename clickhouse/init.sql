@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS lumen_db.logs (
     host String,
     level String,
     message String,
+    user_id String,
     timestamp DateTime64(9),
     metadata String
 ) ENGINE = MergeTree()

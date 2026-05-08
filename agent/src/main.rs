@@ -32,7 +32,7 @@ async fn main() {
     println!("Rust Security Agent listening on :7777");
 
     let producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:19092")
+        .set("bootstrap.servers", "redpanda:9092")
         .set("message.timeout.ms", "5000")
         .create()
         .expect("Producer creation error");
@@ -96,4 +96,12 @@ async fn handle_event(
     }
 
     Ok(warp::reply::json(&"ok"))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn placeholder_test() {
+        assert_eq!(2 + 2, 4);
+    }
 }
