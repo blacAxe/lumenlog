@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -59,15 +57,6 @@ func main() {
 	}
 
 	c.SubscribeTopics([]string{"logs-raw"}, nil)
-
-	// Start HTTP server for Sentinel Proxy events
-	go func() {
-		http.HandleFunc("/events", handleEvents)
-		fmt.Println("Ingestor listening on :9001 for Sentinel Proxy events...")
-		if err := http.ListenAndServe(":9001", nil); err != nil {
-			log.Fatalf("HTTP server failed: %v", err)
-		}
-	}()
 
 	fmt.Println("Lumen Ingestor Live! Processing logs...")
 
@@ -147,50 +136,3 @@ func main() {
 	}
 }
 
-// handleEvents processes incoming alerts from proxy.go
-func handleEvents(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var event map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	// Extract the User Identity (e.g., "bob") and the Security event
-	userId := fmt.Sprintf("%v", event["user_id"])
-	attackType := fmt.Sprintf("%v", event["attack_type"])
-
-	logData := &pb.LogEvent{
-		ServiceName: "sentinel-proxy",
-		UserId:      userId,
-		Message:     fmt.Sprintf("Security Event: %s detected for user %s", attackType, userId),
-		Level:       "INFO",
-		Timestamp:   time.Now().UnixNano(),
-	}
-
-	// If a real attack is identified, upgrade the log level to SECURITY
-	if attackType != "" && attackType != "none" && attackType != "<nil>" {
-		logData.Level = "SECURITY"
-	}
-
-	// Marshal and push to Redpanda (Kafka)
-	payload, _ := proto.Marshal(logData)
-	topic := "logs-raw"
-
-	err := producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          payload,
-	}, nil)
-
-	if err != nil {
-		fmt.Printf("Kafka Production Error: %v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}

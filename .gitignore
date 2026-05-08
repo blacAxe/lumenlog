@@ -4,6 +4,8 @@ clickhouse/data/
 redpanda/data/
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 # --- Go (Ingestor & Alerter) ---
 bin/
@@ -28,3 +30,17 @@ agent/target/
 .idea/
 .vscode/
 *.log
+
+# Coverage / temp
+coverage.out
+tmp/
+dist/
+
+# Rust lock backup
+**/*.bk
+
+# Test binaries
+*.test
+
+# Windows
+Thumbs.db
