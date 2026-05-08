@@ -42,6 +42,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            protobuf-compiler \
+            libprotobuf-dev \
+            pkg-config \
+            libssl-dev \
+            libsasl2-dev \
+            zlib1g-dev \
+            libcurl4-openssl-dev
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
